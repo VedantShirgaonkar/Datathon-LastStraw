@@ -1,0 +1,27 @@
+•⁠  ⁠Voice agents for each developer where it will take updates weekly and ask questions on projects and problems faced - Agent to manage workload between all developers, so that there’s maximum utilization of workforce - We dont just need present insights, recommendations should be given to developers/HRs, for what they should do further - Once developers make commits to projects, mails should be sent to non tech roles as well telling what exactly is the project progress
+
+Voice/video agent for hr reviews
+
+Features List : 
+weekly updates to manager(on terms of git commits, pr merged,tickets completed)
+Reassigning people if fatal errror in something
+Help people assign people on the basis of their live project and workloads and jira tickets
+CiCd pipeline analysis and monitering
+Delivery lead time and cyclicl time line 
+Sprint and realease predictiion 
+Code review latency and Bottleneck Detection
+Productivity trend analys
+Work force utilisation 
+cost overrunn and budget analysis
+Alert on a feature or ticket done late or not done on time 
+risk scoring for projcts and teams
+Intellient recommendation for resoruce reallocation 
+Natural language summaries for leadership
+Engineering leader dashboards
+Hr workflow health and skill gap view 
+skill to work allignment analysis
+Change Failure Rate (% of deploys needing hotfixes) - could add under CI/CD
+Mean Time to Recovery (MTTR) - incident response metric
+Cross-team collaboration metrics (from Slack data)
+Technical debt tracking (code churn, complexity trends)
+If Cicd error then tell what to fix
