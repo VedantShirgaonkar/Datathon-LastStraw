@@ -1,0 +1,20 @@
+[Unit]
+Description=Data Extraction API - FastAPI Webhook Receiver
+After=network.target
+
+[Service]
+User=ec2-user
+Group=ec2-user
+WorkingDirectory=/home/ec2-user/data-extraction-api
+Environment="PATH=/home/ec2-user/data-extraction-api/venv/bin"
+EnvironmentFile=/home/ec2-user/data-extraction-api/.env
+ExecStart=/home/ec2-user/data-extraction-api/venv/bin/uvicorn main:app --host 127.0.0.1 --port 8000
+Restart=always
+RestartSec=5
+
+# Security settings
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
