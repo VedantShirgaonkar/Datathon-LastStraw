@@ -1,0 +1,22 @@
+Features List : 
+weekly updates to manager(on terms of git commits, pr merged,tickets completed)
+Reassigning people if fatal errror in something
+Help people assign people on the basis of their live project and workloads and jira tickets
+CiCd pipeline analysis and monitering
+Delivery lead time and cyclicl time line 
+Sprint and realease predictiion 
+Code review latency and Bottleneck Detection
+Productivity trend analys
+Work force utilisation 
+cost overrunn and budget analysis
+Alert on a feature or ticket done late or not done on time 
+risk scoring for projcts and teams
+Intellient recommendation for resoruce reallocation 
+Natural language summaries for leadership
+Engineering leader dashboards
+Hr workflow health and skill gap view 
+skill to work allignment analysis
+Change Failure Rate (% of deploys needing hotfixes) - could add under CI/CD
+Mean Time to Recovery (MTTR) - incident response metric
+Cross-team collaboration metrics (from Slack data)
+Technical debt tracking (code churn, complexity trends)

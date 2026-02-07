@@ -1,0 +1,20 @@
+# Core Dependencies
+neo4j
+python-dotenv
+
+# Web Framework (for API layer - add when needed)
+# fastapi>=0.109.0
+# uvicorn>=0.27.0
+
+# Database drivers (add as you set them up)
+# psycopg2-binary>=2.9.9  # PostgreSQL
+# clickhouse-driver>=0.2.7  # ClickHouse
+# pinecone-client>=3.0.0  # Pinecone
+
+# Kafka/Streaming (add when needed)
+# confluent-kafka>=2.3.0
+
+# Development dependencies
+# pytest>=8.0.0
+# black>=24.0.0
+# ruff>=0.2.0
