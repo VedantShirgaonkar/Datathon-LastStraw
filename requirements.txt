@@ -8,6 +8,7 @@ python-dotenv
 
 # Database drivers (add as you set them up)
 # psycopg2-binary>=2.9.9  # PostgreSQL
+clickhouse-connect>=0.7.0  # ClickHouse Cloud
 # clickhouse-driver>=0.2.7  # ClickHouse
 # pinecone-client>=3.0.0  # Pinecone
 

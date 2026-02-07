@@ -20,3 +20,4 @@ Change Failure Rate (% of deploys needing hotfixes) - could add under CI/CD
 Mean Time to Recovery (MTTR) - incident response metric
 Cross-team collaboration metrics (from Slack data)
 Technical debt tracking (code churn, complexity trends)
+If Cicd error then if
