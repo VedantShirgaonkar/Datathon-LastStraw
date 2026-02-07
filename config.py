@@ -113,20 +113,21 @@ class ClickHouseConfig:
 
 @dataclass
 class PineconeConfig:
-    """Pinecone vector database configuration"""
-    api_key: str
-    environment: str
+    """Pinecone inference API configuration for embeddings"""
+    
+    def __init__(self, api_key: str, environment: str):
+        self.api_key = api_key
+        self.environment = environment
     
     @classmethod
     def from_env(cls) -> "PineconeConfig":
         """Load Pinecone config from environment variables"""
         api_key = os.getenv("PINECONE_API_KEY")
-        environment = os.getenv("PINECONE_ENVIRONMENT")
+        environment = os.getenv("PINECONE_ENVIRONMENT", "us-east-1-aws")  # Default environment
         
-        if not all([api_key, environment]):
+        if not api_key:
             raise ValueError(
-                "Missing Pinecone credentials. Please set PINECONE_API_KEY "
-                "and PINECONE_ENVIRONMENT in .env file"
+                "Missing Pinecone API key. Please set PINECONE_API_KEY in .env file"
             )
         
         return cls(

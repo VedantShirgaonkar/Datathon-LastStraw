@@ -1,0 +1,458 @@
+{
+  "embeddings": {
+    "name": "embeddings",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "embedding_type",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "source_id",
+        "type": "uuid",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "source_table",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "embedding",
+        "type": "vector",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "title",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "content",
+        "type": "text",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "metadata",
+        "type": "jsonb",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "cfcfc220-7b32-4d87-9cac-4bb2c10d4b45",
+        "embedding_type": "developer_profile",
+        "source_id": "aaaa3333-3333-3333-3333-333333333333",
+        "source_table": "users",
+        "embedding": "[0.78764087,0.07424241,0.49074... (vector)",
+        "title": "Rahul Verma - Developer Profile",
+        "content": "Senior developer with expertise in Kubernetes, Terraform, AWS",
+        "metadata": "{'role': 'Engineer', 'team': 'Platform Engineering', 'email': 'rahul.verma@company.com'}",
+        "created_at": "2026-02-07 12:39:49.008121",
+        "updated_at": "2026-02-07 12:39:49.008121"
+      },
+      {
+        "id": "7b8a3ae0-336d-4a63-8059-c4f9ae7b4f88",
+        "embedding_type": "developer_profile",
+        "source_id": "aaaa2222-2222-2222-2222-222222222222",
+        "source_table": "users",
+        "embedding": "[0.78764087,0.07424241,0.49074... (vector)",
+        "title": "Priya Sharma - Developer Profile",
+        "content": "Senior developer with expertise in React, TypeScript, Node.js",
+        "metadata": "{'role': 'Tech Lead', 'team': 'Platform Engineering', 'email': 'priya.sharma@company.com'}",
+        "created_at": "2026-02-07 12:39:49.008121",
+        "updated_at": "2026-02-07 12:39:49.008121"
+      },
+      {
+        "id": "f5958086-6468-460c-ae21-34cd8158610c",
+        "embedding_type": "developer_profile",
+        "source_id": "aaaa1111-1111-1111-1111-111111111111",
+        "source_table": "users",
+        "embedding": "[0.78764087,0.07424241,0.49074... (vector)",
+        "title": "Alex Kumar - Developer Profile",
+        "content": "Senior developer with expertise in Python, FastAPI, PostgreSQL",
+        "metadata": "{'role': 'Senior Engineer', 'team': 'Platform Engineering', 'email': 'alex.kumar@company.com'}",
+        "created_at": "2026-02-07 12:39:49.008121",
+        "updated_at": "2026-02-07 12:39:49.008121"
+      }
+    ]
+  },
+  "identity_mappings": {
+    "name": "identity_mappings",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "user_id",
+        "type": "uuid",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "source",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "external_id",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "external_username",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "0d1153c1-0a13-4276-bb9b-4825ef413fd6",
+        "user_id": "aaaa1111-1111-1111-1111-111111111111",
+        "source": "github",
+        "external_id": "gh-12345",
+        "external_username": "alexkumar",
+        "created_at": "2026-02-07 12:37:41.422894"
+      },
+      {
+        "id": "b8acd510-35e1-4440-a95a-bdeaa9a4953d",
+        "user_id": "aaaa1111-1111-1111-1111-111111111111",
+        "source": "jira",
+        "external_id": "jira-alex",
+        "external_username": "akumar",
+        "created_at": "2026-02-07 12:37:41.422894"
+      },
+      {
+        "id": "57a0bcbc-7c34-47ba-b851-bf071654c95b",
+        "user_id": "aaaa1111-1111-1111-1111-111111111111",
+        "source": "slack",
+        "external_id": "U001",
+        "external_username": "alex.kumar",
+        "created_at": "2026-02-07 12:37:41.422894"
+      }
+    ]
+  },
+  "project_assignments": {
+    "name": "project_assignments",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "user_id",
+        "type": "uuid",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "project_id",
+        "type": "uuid",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "role",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": "'contributor'::character varying"
+      },
+      {
+        "name": "allocated_percent",
+        "type": "numeric",
+        "nullable": "YES",
+        "default": "100.00"
+      },
+      {
+        "name": "assigned_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "62b56ad7-d5ad-443c-be90-2d1edfaacb9f",
+        "user_id": "aaaa1111-1111-1111-1111-111111111111",
+        "project_id": "a0a01111-1111-1111-1111-111111111111",
+        "role": "contributor",
+        "allocated_percent": "60.00",
+        "assigned_at": "2026-02-07 12:37:51.155248"
+      },
+      {
+        "id": "f053ae69-8b73-42da-8c40-aa1c7c202cd4",
+        "user_id": "aaaa2222-2222-2222-2222-222222222222",
+        "project_id": "a0a01111-1111-1111-1111-111111111111",
+        "role": "lead",
+        "allocated_percent": "40.00",
+        "assigned_at": "2026-02-07 12:37:51.155248"
+      },
+      {
+        "id": "b3cb5795-0884-4829-818a-313b253a5533",
+        "user_id": "dddd1111-1111-1111-1111-111111111111",
+        "project_id": "a0a01111-1111-1111-1111-111111111111",
+        "role": "contributor",
+        "allocated_percent": "30.00",
+        "assigned_at": "2026-02-07 12:37:51.155248"
+      }
+    ]
+  },
+  "projects": {
+    "name": "projects",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "name",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "description",
+        "type": "text",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "github_repo",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "jira_project_key",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "notion_database_id",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "status",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": "'active'::character varying"
+      },
+      {
+        "name": "priority",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": "'medium'::character varying"
+      },
+      {
+        "name": "target_date",
+        "type": "date",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "a0a01111-1111-1111-1111-111111111111",
+        "name": "API Gateway v2",
+        "description": "New microservices API gateway with rate limiting",
+        "github_repo": "company/api-gateway-v2",
+        "jira_project_key": "APIGW",
+        "notion_database_id": "NULL",
+        "status": "active",
+        "priority": "high",
+        "target_date": "2026-03-15",
+        "created_at": "2026-02-07 12:37:51.140449"
+      },
+      {
+        "id": "a0a02222-2222-2222-2222-222222222222",
+        "name": "Customer Dashboard",
+        "description": "React-based customer analytics dashboard",
+        "github_repo": "company/customer-dashboard",
+        "jira_project_key": "DASH",
+        "notion_database_id": "NULL",
+        "status": "active",
+        "priority": "high",
+        "target_date": "2026-02-28",
+        "created_at": "2026-02-07 12:37:51.140449"
+      },
+      {
+        "id": "a0a03333-3333-3333-3333-333333333333",
+        "name": "Data Pipeline",
+        "description": "Real-time data ingestion pipeline",
+        "github_repo": "company/data-pipeline",
+        "jira_project_key": "DATA",
+        "notion_database_id": "NULL",
+        "status": "active",
+        "priority": "medium",
+        "target_date": "2026-04-01",
+        "created_at": "2026-02-07 12:37:51.140449"
+      }
+    ]
+  },
+  "teams": {
+    "name": "teams",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "name",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Platform Engineering",
+        "created_at": "2026-02-07 12:37:41.376448"
+      },
+      {
+        "id": "22222222-2222-2222-2222-222222222222",
+        "name": "Frontend Team",
+        "created_at": "2026-02-07 12:37:41.376448"
+      },
+      {
+        "id": "33333333-3333-3333-3333-333333333333",
+        "name": "Data Engineering",
+        "created_at": "2026-02-07 12:37:41.376448"
+      }
+    ]
+  },
+  "users": {
+    "name": "users",
+    "columns": [
+      {
+        "name": "id",
+        "type": "uuid",
+        "nullable": "NO",
+        "default": "gen_random_uuid()"
+      },
+      {
+        "name": "email",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "name",
+        "type": "varchar",
+        "nullable": "NO",
+        "default": null
+      },
+      {
+        "name": "team_id",
+        "type": "uuid",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "role",
+        "type": "varchar",
+        "nullable": "YES",
+        "default": null
+      },
+      {
+        "name": "hourly_rate",
+        "type": "numeric",
+        "nullable": "YES",
+        "default": "50.00"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp",
+        "nullable": "YES",
+        "default": "now()"
+      }
+    ],
+    "sample_data": [
+      {
+        "id": "aaaa1111-1111-1111-1111-111111111111",
+        "email": "alex.kumar@company.com",
+        "name": "Alex Kumar",
+        "team_id": "11111111-1111-1111-1111-111111111111",
+        "role": "Senior Engineer",
+        "hourly_rate": "85.00",
+        "created_at": "2026-02-07 12:37:41.390250"
+      },
+      {
+        "id": "aaaa2222-2222-2222-2222-222222222222",
+        "email": "priya.sharma@company.com",
+        "name": "Priya Sharma",
+        "team_id": "11111111-1111-1111-1111-111111111111",
+        "role": "Tech Lead",
+        "hourly_rate": "95.00",
+        "created_at": "2026-02-07 12:37:41.390250"
+      },
+      {
+        "id": "aaaa3333-3333-3333-3333-333333333333",
+        "email": "rahul.verma@company.com",
+        "name": "Rahul Verma",
+        "team_id": "11111111-1111-1111-1111-111111111111",
+        "role": "Engineer",
+        "hourly_rate": "65.00",
+        "created_at": "2026-02-07 12:37:41.390250"
+      }
+    ]
+  }
+}

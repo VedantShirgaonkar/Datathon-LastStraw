@@ -2,18 +2,29 @@
 neo4j
 python-dotenv
 
-# Web Framework (for API layer - add when needed)
-# fastapi>=0.109.0
-# uvicorn>=0.27.0
+# AI Agent Dependencies
+langchain
+langchain-openai # Featherless AI uses OpenAI-compatible API
+langgraph
+langchain-community
+pydantic
+pydantic-settings
 
 # Database drivers (add as you set them up)
-# psycopg2-binary>=2.9.9  # PostgreSQL
-clickhouse-connect>=0.7.0  # ClickHouse Cloud
-# clickhouse-driver>=0.2.7  # ClickHouse
-# pinecone-client>=3.0.0  # Pinecone
+psycopg2-binary>=2.9.9  # PostgreSQL + pgvector
+clickhouse-connect  # ClickHouse Cloud
+pgvector>=0.2.0  # pgvector Python client for vector storage and search
+pinecone[grpc]>=5.0.0  # Pinecone inference API for embeddings
 
-# Kafka/Streaming (add when needed)
-# confluent-kafka>=2.3.0
+# Kafka/Streaming
+kafka-python  # Apache Kafka consumer
+
+# AWS SDK (for Lambda executor)
+boto3>=1.34.0  # AWS Lambda invocation for executor commands
+
+# Web Framework (for API layer - add when needed)
+fastapi
+uvicorn
 
 # Development dependencies
 # pytest>=8.0.0

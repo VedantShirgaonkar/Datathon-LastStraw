@@ -3,32 +3,12 @@ Neo4j client for managing graph database connections and operations.
 """
 
 import sys
-import importlib.util
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from contextlib import contextmanager
 
-# Fix circular import: Import neo4j from site-packages directly
-# The local neo4j/ folder conflicts with the neo4j pip package
-def _import_neo4j_package():
-    """Import neo4j package from site-packages, bypassing local neo4j/ folder."""
-    # Find site-packages neo4j (not from current directory)
-    for path in sys.path:
-        if 'site-packages' in path or 'dist-packages' in path:
-            spec = importlib.util.find_spec('neo4j', [path])
-            if spec and spec.origin and 'site-packages' in spec.origin:
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                return module
-    raise ImportError("Could not find neo4j package in site-packages")
-
-_neo4j_pkg = _import_neo4j_package()
-GraphDatabase = _neo4j_pkg.GraphDatabase
-Driver = _neo4j_pkg.Driver
-Session = _neo4j_pkg.Session
-Result = _neo4j_pkg.Result
-ServiceUnavailable = _neo4j_pkg.exceptions.ServiceUnavailable
-AuthError = _neo4j_pkg.exceptions.AuthError
+from neo4j import GraphDatabase, Driver, Session, Result
+from neo4j.exceptions import ServiceUnavailable, AuthError
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import config
