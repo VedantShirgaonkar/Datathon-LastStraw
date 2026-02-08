@@ -1,0 +1,57 @@
+{
+  "event_id": "jira-test-789",
+  "source": "jira",
+  "event_type": "jira:issue_created",
+  "timestamp": "2026-02-08T13:00:00Z",
+  "raw": {
+    "webhookEvent": "jira:issue_created",
+    "issue": {
+      "id": "10001",
+      "key": "DT-123",
+      "fields": {
+        "summary": "Database query performance degradation in production",
+        "description": "Users are reporting slow response times. Database queries taking 5-10 seconds instead of usual <1 second. Affects all users.",
+        "issuetype": {
+          "name": "Bug",
+          "subtask": false
+        },
+        "priority": {
+          "name": "Critical",
+          "id": "1"
+        },
+        "status": {
+          "name": "Open",
+          "statusCategory": {
+            "key": "new"
+          }
+        },
+        "assignee": {
+          "displayName": "John Smith",
+          "emailAddress": "john@example.com",
+          "accountId": "5b10a2844c20165700ede21g"
+        },
+        "reporter": {
+          "displayName": "Jane Doe",
+          "emailAddress": "jane@example.com",
+          "accountId": "5b10ac8d82e05b22cc7d4ef5"
+        },
+        "created": "2026-02-08T13:00:00.000+0000",
+        "updated": "2026-02-08T13:00:00.000+0000",
+        "labels": [
+          "performance",
+          "production",
+          "database"
+        ],
+        "components": [
+          {
+            "name": "Backend"
+          }
+        ]
+      }
+    },
+    "user": {
+      "displayName": "Jane Doe",
+      "emailAddress": "jane@example.com"
+    }
+  }
+}

@@ -11,11 +11,19 @@ from typing import Optional
 class AgentConfig(BaseSettings):
     """Agent configuration with Pydantic validation"""
     
-    # Featherless AI
-    featherless_api_key: str = Field(..., alias="FEATHERLESS_API_KEY")
-    featherless_model: str = Field(default="Qwen/Qwen3-32B", alias="FEATHERLESS_MODEL")
-    featherless_base_url: str = Field(default="https://api.featherless.ai/v1")
-    featherless_temperature: float = Field(default=0.1, ge=0.0, le=2.0)
+    # LLM Configuration (supports OpenAI and Groq)
+    # API Keys
+    openai_api_key: Optional[str] = Field(None, alias="OPENAI_API_KEY")
+    groq_api_key: Optional[str] = Field(None, alias="GROQ_API_KEY")
+    
+    # Model selection (auto-detects provider: gpt-* = OpenAI, others = Groq)
+    groq_model: str = Field(default="gpt-4o-mini", alias="GROQ_MODEL")
+    groq_base_url: str = Field(default="https://api.groq.com/openai/v1", alias="GROQ_BASE_URL")
+    openai_base_url: str = Field(default="https://api.openai.com/v1", alias="OPENAI_BASE_URL")
+    groq_temperature: float = Field(default=0.0, ge=0.0, le=2.0)
+    
+    # Optional fallback model to use for very large requests
+    groq_fallback_model: Optional[str] = Field(default=None, alias="GROQ_FALLBACK_MODEL")
     
     # Neo4j
     neo4j_uri: str = Field(..., alias="NEO4J_URI")
@@ -70,25 +78,45 @@ class AgentConfig(BaseSettings):
     jira_email: Optional[str] = Field(None, alias="JIRA_EMAIL")
     github_token: Optional[str] = Field(None, alias="GITHUB_TOKEN")
     
+    # Webhook Server Configuration  
+    github_webhook_secret: Optional[str] = Field(None, alias="GITHUB_WEBHOOK_SECRET")
+    jira_webhook_secret: Optional[str] = Field(None, alias="JIRA_WEBHOOK_SECRET")
+    webhook_server_host: str = Field("0.0.0.0", alias="WEBHOOK_SERVER_HOST")
+    webhook_server_port: int = Field(8000, alias="WEBHOOK_SERVER_PORT")
+    
+    # Agent Server Configuration
+    agent_server_host: str = Field("0.0.0.0", alias="AGENT_SERVER_HOST")
+    agent_server_port: int = Field(8001, alias="AGENT_SERVER_PORT")
+    agent_server_url: str = Field("http://localhost:8001", alias="AGENT_SERVER_URL")
+    
     # Agent settings
     max_tool_retries: int = Field(default=3, ge=1, le=10)
     tool_timeout_seconds: int = Field(default=30, ge=5, le=300)
     enable_async_tools: bool = Field(default=True)
     log_level: str = Field(default="INFO")
     
-    @field_validator("featherless_model")
+    @field_validator("groq_model")
     @classmethod
     def validate_model(cls, v: str) -> str:
-        """Validate Featherless AI model supports tool calling"""
-        supported_models = ["Qwen/Qwen3-32B", "Qwen/Qwen3-72B"]
-        if not any(model in v for model in ["Qwen", "Qwen3"]):
-            raise ValueError(f"Model {v} may not support native tool calling. Recommended: {supported_models}")
+        """Validate model supports tool calling"""
+        supported_models = ["gpt-4o-mini", "gpt-4o", "gpt-4-turbo", "gpt-oss-120b", "llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "mixtral-8x7b-32768"]
+        # Accept any model - user knows what they're doing
         return v
+    
+    def get_api_config(self, model_name: str = None):
+        """Get API key and base URL for the specified model."""
+        model = model_name or self.groq_model
+        # Auto-detect provider: gpt-* models use OpenAI, others use Groq
+        if model.startswith('gpt-'):
+            return self.openai_api_key, self.openai_base_url
+        else:
+            return self.groq_api_key, self.groq_base_url
     
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields from .env (PostgreSQL, etc.)
 
 
 # Global config instance

@@ -1,0 +1,66 @@
+{
+  "event_type": "github",
+  "timestamp": "2026-02-08T10:30:00Z",
+  "data": {
+    "action": "created",
+    "repository": {
+      "id": 123456789,
+      "name": "datathon-project",
+      "full_name": "your-org/datathon-project",
+      "owner": {
+        "login": "your-org",
+        "id": 987654321
+      },
+      "html_url": "https://github.com/your-org/datathon-project"
+    },
+    "commits": [
+      {
+        "sha": "a1b2c3d4e5f6789012345678901234567890abcd",
+        "message": "Fix: Resolved authentication bug in user login module\n\nThis commit fixes the OAuth token refresh issue that was causing users to be logged out prematurely. Added proper error handling and token validation.",
+        "author": {
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "username": "johndoe"
+        },
+        "timestamp": "2026-02-08T10:25:00Z",
+        "url": "https://github.com/your-org/datathon-project/commit/a1b2c3d4e5f6789012345678901234567890abcd",
+        "added": [
+          "src/auth/token_validator.py"
+        ],
+        "removed": [],
+        "modified": [
+          "src/auth/oauth_handler.py",
+          "tests/test_auth.py"
+        ]
+      },
+      {
+        "sha": "b2c3d4e5f6789012345678901234567890abcdef",
+        "message": "Feat: Added user profile caching to improve performance\n\nImplemented Redis caching layer for user profiles to reduce database load. Cache TTL set to 5 minutes.",
+        "author": {
+          "name": "Jane Smith",
+          "email": "jane.smith@example.com",
+          "username": "janesmith"
+        },
+        "timestamp": "2026-02-08T10:28:00Z",
+        "url": "https://github.com/your-org/datathon-project/commit/b2c3d4e5f6789012345678901234567890abcdef",
+        "added": [
+          "src/cache/user_cache.py",
+          "src/cache/__init__.py"
+        ],
+        "removed": [],
+        "modified": [
+          "src/models/user.py",
+          "requirements.txt"
+        ]
+      }
+    ],
+    "pusher": {
+      "name": "johndoe",
+      "email": "john.doe@example.com"
+    },
+    "ref": "refs/heads/main",
+    "before": "1234567890abcdef1234567890abcdef12345678",
+    "after": "b2c3d4e5f6789012345678901234567890abcdef",
+    "compare": "https://github.com/your-org/datathon-project/compare/1234567890ab...b2c3d4e5f678"
+  }
+}

@@ -1,5 +1,6 @@
 """
-Kafka consumer for ingesting engineering events.
+Lambda handler for AWS MSK event processing.
+Automatically triggered by AWS MSK (no manual Kafka consumer needed).
 """
 
 import sys
@@ -7,9 +8,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import json
+import base64
 import logging
-from kafka import KafkaConsumer
-from kafka.errors import KafkaError
 from datetime import datetime, timezone
 from pydantic import ValidationError
 
@@ -28,82 +28,112 @@ logger = logging.getLogger(__name__)
 
 class EventProcessor:
     """
-    Kafka event processor with agent integration.
+    AWS Lambda event processor with agent integration.
+    Processes events from MSK trigger (no manual Kafka consumer).
     """
     
     def __init__(self):
         self.config = get_config()
         self.agent = DatabaseAgent()
-        self.consumer = None
         
         logger.info(f"Initialized EventProcessor with model: {self.config.featherless_model}")
     
-    def start(self):
+    def process_lambda_event(self, lambda_event: dict) -> dict:
         """
-        Start consuming events from Kafka/MSK.
-        Supports multiple topics and SSL/TLS for MSK.
+        Process Lambda event triggered by AWS MSK.
+        
+        Lambda MSK Event Format:
+        {
+            'eventSource': 'aws:kafka',
+            'records': {
+                'events.github-0': [
+                    {
+                        'topic': 'events.github',
+                        'partition': 0,
+                        'offset': 123,
+                        'timestamp': 1234567890,
+                        'key': 'base64key',
+                        'value': 'base64value'
+                    }
+                ]
+            }
+        }
+        
+        Args:
+            lambda_event: Event from AWS Lambda MSK trigger
+        
+        Returns:
+            dict: Processing results
         """
         try:
-            # Parse topics list
-            topics = [t.strip() for t in self.config.kafka_topics.split(',')]
+            logger.info("=" * 80)
+            logger.info("Processing MSK Lambda Event")
+            logger.info("=" * 80)
             
-            # Build consumer config
-            consumer_config = {
-                'bootstrap_servers': self.config.kafka_bootstrap_servers.split(','),
-                'group_id': self.config.kafka_group_id,
-                'auto_offset_reset': 'latest',
-                'enable_auto_commit': True,
-                'value_deserializer': lambda m: json.loads(m.decode('utf-8'))
+            total_records = 0
+            successful = 0
+            failed = 0
+            
+            # Process records from all topics/partitions
+            records_by_topic = lambda_event.get('records', {})
+            
+            for topic_partition, messages in records_by_topic.items():
+                logger.info(f"Processing {len(messages)} messages from {topic_partition}")
+                
+                for message in messages:
+                    total_records += 1
+                    try:
+                        # Decode base64 value
+                        value_bytes = base64.b64decode(message['value'])
+                        raw_event = json.loads(value_bytes)
+                        
+                        logger.info(f"Record {total_records}: partition={message['partition']}, offset={message['offset']}")
+                        
+                        # Process the message
+                        success = self._process_message(raw_event)
+                        
+                        if success:
+                            successful += 1
+                        else:
+                            failed += 1
+                            
+                    except Exception as e:
+                        failed += 1
+                        logger.error(f"Error processing record {total_records}: {e}", exc_info=True)
+                        continue
+            
+            # Summary
+            logger.info("=" * 80)
+            logger.info(f"Processing complete: {successful}/{total_records} successful, {failed} failed")
+            logger.info("=" * 80)
+            
+            return {
+                'statusCode': 200,
+                'body': {
+                    'total': total_records,
+                    'successful': successful,
+                    'failed': failed
+                }
             }
             
-            # Add SSL config for MSK
-            if self.config.kafka_ssl_enabled:
-                consumer_config.update({
-                    'security_protocol': self.config.kafka_security_protocol,
-                    'ssl_check_hostname': True,
-                })
-            
-            # Initialize Kafka consumer
-            self.consumer = KafkaConsumer(**consumer_config)
-            self.consumer.subscribe(topics)
-            
-            logger.info(f"Connected to Kafka: {self.config.kafka_bootstrap_servers}")
-            logger.info(f"Subscribed to topics: {topics}")
-            logger.info(f"Security: {self.config.kafka_security_protocol}")
-            logger.info("Waiting for events...")
-            
-            # Consume messages
-            for message in self.consumer:
-                try:
-                    self._process_message(message)
-                except Exception as e:
-                    logger.error(f"Error processing message: {e}", exc_info=True)
-                    continue
-        
-        except KafkaError as e:
-            logger.error(f"Kafka error: {e}", exc_info=True)
-            raise
-        
-        except KeyboardInterrupt:
-            logger.info("Shutting down gracefully...")
-        
-        finally:
-            if self.consumer:
-                self.consumer.close()
-                logger.info("Kafka consumer closed")
+        except Exception as e:
+            logger.error(f"Fatal error in process_lambda_event: {e}", exc_info=True)
+            return {
+                'statusCode': 500,
+                'body': {'error': str(e)}
+            }
     
-    def _process_message(self, message):
+    def _process_message(self, raw_event: dict) -> bool:
         """
         Process a single Kafka message.
         
         Args:
-            message: Kafka message with event data
+            raw_event: Raw event dictionary from MSK
+        
+        Returns:
+            bool: True if successful, False otherwise
         """
         try:
-            # Extract message data
-            raw_event = message.value
-            
-            logger.info(f"Received event from partition {message.partition}, offset {message.offset}")
             logger.debug(f"Raw event: {json.dumps(raw_event, indent=2)}")
             
             # Validate event schema
@@ -111,7 +141,7 @@ class EventProcessor:
             
             if not event:
                 logger.warning("Event validation failed, skipping")
-                return
+                return False
             
             # Process through agent
             logger.info(f"Processing {event.event_type} event from {event.source}")
@@ -127,6 +157,7 @@ class EventProcessor:
             else:
                 logger.error(f"❌ Event processing failed")
                 logger.error(f"Errors: {response.errors}")
+                return False
             
             # Generate embeddings for semantic search
             try:
@@ -143,9 +174,11 @@ class EventProcessor:
                 logger.warning(f"Embedding generation failed (non-blocking): {e}")
             
             logger.info("-" * 80)
+            return True
             
         except Exception as e:
             logger.error(f"Error in _process_message: {e}", exc_info=True)
+            return False
     
     def _validate_event(self, raw_event: dict) -> KafkaEvent | None:
         """
@@ -210,22 +243,74 @@ class EventProcessor:
             return None
 
 
-def main():
+def lambda_handler(event, context):
     """
-    Main entry point for Kafka consumer.
+    AWS Lambda handler - entry point for MSK trigger.
+    
+    Args:
+        event: Lambda event from MSK trigger
+        context: Lambda context object
+    
+    Returns:
+        dict: Status and processing results
     """
-    logger.info("=" * 80)
-    logger.info("Database Agent - Kafka Event Processor")
-    logger.info("=" * 80)
+    logger.info("Lambda function invoked")
+    logger.info(f"Function: {context.function_name if context else 'local'}")
+    logger.info(f"Request ID: {context.aws_request_id if context else 'N/A'}")
     
     try:
         processor = EventProcessor()
-        processor.start()
+        result = processor.process_lambda_event(event)
+        return result
     
     except Exception as e:
-        logger.error(f"Fatal error: {e}", exc_info=True)
-        raise
+        logger.error(f"Fatal error in lambda_handler: {e}", exc_info=True)
+        return {
+            'statusCode': 500,
+            'body': {'error': str(e)}
+        }
 
 
+# For local testing
 if __name__ == "__main__":
-    main()
+    """
+    Local testing with sample MSK event format.
+    """
+    logger.info("=" * 80)
+    logger.info("Local Testing Mode - MSK Lambda Handler")
+    logger.info("=" * 80)
+    
+    # Sample MSK event format
+    sample_event = {
+        'eventSource': 'aws:kafka',
+        'records': {
+            'events.github-0': [
+                {
+                    'topic': 'events.github',
+                    'partition': 0,
+                    'offset': 123,
+                    'timestamp': 1234567890,
+                    'key': base64.b64encode(b'test-key').decode('utf-8'),
+                    'value': base64.b64encode(json.dumps({
+                        'event_id': 'test-123',
+                        'source': 'github',
+                        'event_type': 'push',
+                        'timestamp': '2026-02-08T12:00:00Z',
+                        'raw': {
+                            'ref': 'refs/heads/main',
+                            'commits': [{'id': 'abc123', 'message': 'Test commit'}],
+                            'repository': {'name': 'test-repo'}
+                        }
+                    }).encode('utf-8')).decode('utf-8')
+                }
+            ]
+        }
+    }
+    
+    # Mock Lambda context
+    class MockContext:
+        function_name = "local-test"
+        request_id = "local-test-123"
+    
+    result = lambda_handler(sample_event, MockContext())
+    logger.info(f"Test result: {json.dumps(result, indent=2)}")

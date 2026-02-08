@@ -1,0 +1,32 @@
+# Core Dependencies
+neo4j==5.26.0
+python-dotenv==1.1.0
+
+# AI Agent Dependencies
+langchain==0.3.20
+langchain-openai==0.3.15
+langgraph==0.2.74
+langchain-community==0.3.20
+pydantic==2.11.4
+pydantic-settings==2.7.1
+
+# Database drivers
+psycopg2-binary==2.9.10
+clickhouse-connect==0.9.7
+pgvector==0.3.9
+pinecone[grpc]==5.6.0
+
+# Kafka/Streaming
+kafka-python==2.0.2
+
+# AWS SDK
+boto3==1.37.69
+
+# Web Framework (optional)
+fastapi==0.115.12
+uvicorn==0.34.2
+
+# Development dependencies (commented out for Lambda)
+# pytest==8.3.5
+# black==25.1.0
+# ruff==0.8.6

@@ -10,6 +10,22 @@ from enum import Enum
 
 
 # ==============================================================================
+# HELPER FUNCTIONS
+# ==============================================================================
+
+def normalize_email(value: str) -> str:
+    """Convert username or invalid email to valid email format.
+    
+    If the value doesn't contain '@', assume it's a GitHub/Jira username
+    and convert it to a fake but valid email format.
+    """
+    if isinstance(value, str) and '@' not in value:
+        # Use a fake but valid domain that passes Pydantic validation
+        return f"{value}@users.noreply.github.com"
+    return value
+
+
+# ==============================================================================
 # ENUMS
 # ==============================================================================
 
@@ -73,6 +89,11 @@ class CreateDeveloperInput(BaseModel):
     name: str = Field(..., min_length=2, max_length=100, description="Developer's full name")
     team_id: str = Field(..., description="Team identifier")
     
+    @field_validator('email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+    
     class Config:
         json_schema_extra = {
             "example": {
@@ -96,6 +117,11 @@ class AddSkillInput(BaseModel):
     developer_email: EmailStr = Field(..., description="Developer's email")
     skill_name: str = Field(..., min_length=1, max_length=50, description="Skill name (e.g., Python, React)")
     proficiency: SkillProficiency = Field(..., description="Proficiency level")
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
     
     class Config:
         json_schema_extra = {
@@ -127,6 +153,11 @@ class AddContributionInput(BaseModel):
     developer_email: EmailStr
     project_id: str = Field(..., min_length=1)
     metrics: ContributionMetrics
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
     
     class Config:
         json_schema_extra = {
@@ -207,6 +238,11 @@ class InsertCommitEventInput(BaseModel):
     developer_email: EmailStr
     commit_data: CommitData
     
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+    
     class Config:
         json_schema_extra = {
             "example": {
@@ -244,6 +280,28 @@ class InsertPREventInput(BaseModel):
     project_id: str
     developer_email: EmailStr
     pr_data: PRData
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+
+
+# Flat args schema for insert_pr_event function (for LLM tool calling)
+class InsertPREventArgs(BaseModel):
+    """Flat args schema for insert_pr_event - matches function signature"""
+    project_id: str = Field(..., description="Project identifier")
+    developer_email: str = Field(..., description="Developer's email address")
+    pr_number: int = Field(..., gt=0, description="Pull request number")
+    action: str = Field(..., description="PR action: opened, merged, reviewed, or closed")
+    review_time_hours: Optional[float] = Field(None, ge=0, description="Time from creation to merge in hours")
+    lines_changed: Optional[int] = Field(None, ge=0, description="Total lines changed in PR")
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+
 
 
 class JiraIssueData(BaseModel):
@@ -260,12 +318,56 @@ class InsertJiraEventInput(BaseModel):
     project_id: str
     developer_email: EmailStr
     issue_data: JiraIssueData
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+
+
+# Flat args schema for insert_jira_event function (for LLM tool calling)
+class InsertJiraEventArgs(BaseModel):
+    """Flat args schema for insert_jira_event - matches function signature"""
+    project_id: str = Field(..., description="Project identifier")
+    developer_email: str = Field(..., description="Developer's email address")
+    issue_key: str = Field(..., description="Jira issue key (e.g., PROJ-123)")
+    event_type: str = Field(..., description="Event type: issue_created, issue_updated, issue_completed")
+    status_from: Optional[str] = Field(None, description="Previous status (for transitions)")
+    status_to: Optional[str] = Field(None, description="New status (for transitions)")
+    story_points: Optional[int] = Field(None, ge=0, le=100, description="Story points value")
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
+
+
+# Flat args schema for insert_commit_event function (for LLM tool calling)
+class InsertCommitEventArgs(BaseModel):
+    """Flat args schema for insert_commit_event - matches function signature"""
+    project_id: str = Field(..., description="Project identifier")
+    developer_email: str = Field(..., description="Developer's email address")
+    sha: str = Field(..., min_length=7, max_length=40, description="Git commit SHA")
+    message: str = Field(..., description="Commit message")
+    files_changed: int = Field(..., ge=0, description="Number of files changed")
+    lines_added: int = Field(..., ge=0, description="Lines added")
+    lines_deleted: int = Field(..., ge=0, description="Lines deleted")
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
 
 
 class DeveloperActivityInput(BaseModel):
     """Input schema for getting developer activity"""
     developer_email: EmailStr
     days: int = Field(default=30, ge=1, le=365, description="Number of days to look back")
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
 
 
 class DeveloperActivityOutput(BaseModel):
@@ -306,6 +408,11 @@ class UpsertEmbeddingInput(BaseModel):
     developer_email: EmailStr
     profile_text: str = Field(..., min_length=10, description="Text summary of developer profile")
     metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
 
 
 class UpsertEmbeddingOutput(BaseModel):
@@ -360,6 +467,11 @@ class SendEmailInput(BaseModel):
     to: EmailStr
     subject: str = Field(..., min_length=1, max_length=200)
     body: str = Field(..., min_length=1)
+    
+    @field_validator('to', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
 
 
 class SendEmailOutput(BaseModel):
@@ -377,6 +489,11 @@ class AssignJiraIssueInput(BaseModel):
     """Input schema for Jira assignment"""
     issue_key: str = Field(..., pattern=r"^[A-Z]+-\d+$")
     assignee_email: EmailStr
+    
+    @field_validator('assignee_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        return normalize_email(v)
 
 
 class AssignJiraIssueOutput(BaseModel):
@@ -420,6 +537,13 @@ class EventClassification(BaseModel):
     developer_email: Optional[EmailStr] = None
     project_id: Optional[str] = None
     confidence: float = Field(ge=0.0, le=1.0)
+    
+    @field_validator('developer_email', mode='before')
+    @classmethod
+    def normalize_email_field(cls, v):
+        if v is None:
+            return v
+        return normalize_email(v)
 
 
 class ToolCall(BaseModel):

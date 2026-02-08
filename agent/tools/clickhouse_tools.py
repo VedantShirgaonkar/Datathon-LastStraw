@@ -13,8 +13,11 @@ from datetime import datetime, timezone
 from clickhouse.clickhouse_client import ClickHouseClient
 from agent.schemas.tool_schemas import (
     InsertCommitEventInput,
+    InsertCommitEventArgs,
     InsertPREventInput,
+    InsertPREventArgs,
     InsertJiraEventInput,
+    InsertJiraEventArgs,
     InsertEventOutput,
     DeveloperActivityInput,
     DeveloperActivityOutput,
@@ -451,18 +454,21 @@ clickhouse_tools = [
         func=insert_commit_event,
         name="insert_commit_event",
         description="Insert GitHub commit event into ClickHouse for time-series analytics. Use when processing git commits.",
+        args_schema=InsertCommitEventArgs,
         return_direct=False
     ),
     StructuredTool.from_function(
         func=insert_pr_event,
         name="insert_pr_event",
         description="Insert GitHub PR event into ClickHouse for DORA metrics calculation. Use when PRs are opened/merged/reviewed.",
+        args_schema=InsertPREventArgs,
         return_direct=False
     ),
     StructuredTool.from_function(
         func=insert_jira_event,
         name="insert_jira_event",
         description="Insert Jira issue event into ClickHouse for sprint analytics. Use when Jira issues are created/updated/completed.",
+        args_schema=InsertJiraEventArgs,
         return_direct=False
     ),
     StructuredTool.from_function(

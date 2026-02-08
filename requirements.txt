@@ -1,32 +1,35 @@
 # Core Dependencies
 neo4j
-python-dotenv
+python-dotenv>=1.0.0
+
+# Webhook Server
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
 
 # AI Agent Dependencies
 langchain
-langchain-openai # Featherless AI uses OpenAI-compatible API
+langchain-openai  # Featherless AI uses OpenAI-compatible API
 langgraph
 langchain-community
 pydantic
 pydantic-settings
 
-# Database drivers (add as you set them up)
-psycopg2-binary>=2.9.9  # PostgreSQL + pgvector
+# Database drivers
+psycopg2-binary  # PostgreSQL + pgvector
 clickhouse-connect  # ClickHouse Cloud
-pgvector>=0.2.0  # pgvector Python client for vector storage and search
-pinecone[grpc]>=5.0.0  # Pinecone inference API for embeddings
+pgvector  # pgvector Python client for vector storage and search
+pinecone[grpc]  # Pinecone inference API for embeddings
 
-# Kafka/Streaming
-kafka-python  # Apache Kafka consumer
+# Kafka/Streaming (optional - only if using Kafka instead of webhooks)
+#kafka-python  # Apache Kafka consumer
 
 # AWS SDK (for Lambda executor)
-boto3>=1.34.0  # AWS Lambda invocation for executor commands
+boto3  # AWS Lambda invocation for executor commands
 
-# Web Framework (for API layer - add when needed)
-fastapi
-uvicorn
+# HTTP client (for testing webhooks)
+requests
 
-# Development dependencies
-# pytest>=8.0.0
-# black>=24.0.0
-# ruff>=0.2.0
+# Development dependencies (uncomment if needed)
+# pytest==8.3.5
+# black==25.1.0
+# ruff==0.8.6

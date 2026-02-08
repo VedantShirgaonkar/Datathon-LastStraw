@@ -1,0 +1,16 @@
+{
+  "eventSource": "aws:kafka",
+  "records": {
+    "events.github-0": [
+      {
+        "topic": "events.github",
+        "partition": 0,
+        "offset": 12345,
+        "timestamp": 1707393600000,
+        "key": "Z2l0aHViLXB1c2g=",
+        "value": "eyJldmVudF9pZCI6ICJ0ZXN0LTEyMyIsICJzb3VyY2UiOiAiZ2l0aHViIiwgImV2ZW50X3R5cGUiOiAicHVzaCIsICJ0aW1lc3RhbXAiOiAiMjAyNi0wMi0wOFQxMjowMDowMFoiLCAicmF3IjogeyJyZWYiOiAicmVmcy9oZWFkcy9tYWluIiwgInJlcG9zaXRvcnkiOiB7Im5hbWUiOiAiZGF0YXRob24tcHJvamVjdCJ9LCAiY29tbWl0cyI6IFt7ImlkIjogImFiYzEyMyIsICJtZXNzYWdlIjogIlRlc3QgY29tbWl0In1dfX0=",
+        "headers": []
+      }
+    ]
+  }
+}
