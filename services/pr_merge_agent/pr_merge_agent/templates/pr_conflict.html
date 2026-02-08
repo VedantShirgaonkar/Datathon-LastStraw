@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <body style="font-family: Arial, sans-serif;">
+    <h2>PR needs attention (merge conflict / not mergeable)</h2>
+    <p><b>{{ repo }} #{{ pr_number }}</b>: {{ title }}</p>
+    <p><a href="{{ pr_url }}">Open PR</a></p>
+
+    <p>
+      <a href="{{ pr_url }}" style="display:inline-block; padding:10px 14px; text-decoration:none; background:#0969da; color:white; border-radius:6px;">
+        Open PR
+      </a>
+    </p>
+
+    <p>GitHub mergeable state: <b>{{ mergeable_state }}</b></p>
+
+    <h3>Summary</h3>
+    <pre style="white-space: pre-wrap; background:#f6f8fa; padding:12px; border-radius:6px;">{{ summary }}</pre>
+
+    <p>Please check and resolve conflicts before merging.</p>
+  </body>
+</html>
