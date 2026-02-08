@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hr-voice-agent"
+version = "0.1.0"
+description = "Personalized monthly HR review voice agent (FastAPI)"
+readme = "README.md"
+requires-python = ">=3.9"
+
+# Keep runtime dependencies in requirements.txt for hackathon simplicity.
+# (You can later migrate them here if you want.)
+
+[tool.setuptools]
+packages = ["hr_voice_agent"]

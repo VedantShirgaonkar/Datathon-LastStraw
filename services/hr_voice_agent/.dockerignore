@@ -1,0 +1,14 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite
+*.log
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+hr_voice_agent.egg-info/
