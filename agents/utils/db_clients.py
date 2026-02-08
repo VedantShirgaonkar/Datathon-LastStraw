@@ -284,6 +284,115 @@ def test_all_connections() -> Dict[str, bool]:
     return results
 
 
+def diagnose_tools() -> Dict[str, Any]:
+    """
+    Test tool execution directly.
+    """
+    diagnostics = {}
+    
+    # Test Postgres Tool: list_developers
+    try:
+        from agents.tools.postgres_tools import list_developers
+        # Manually invoke the tool function (bypassing LangChain wrapper if possible, or using it directly)
+        # The @tool decorator makes it a StructuredTool. We can call .invoke or .func
+        
+        # Try calling the underlying function if available, or invoke
+        if hasattr(list_developers, 'func'):
+            result = list_developers.func(limit=1)
+        else:
+            result = list_developers.invoke({"limit": 1})
+            
+        diagnostics['list_developers'] = {"status": "ok", "result": str(result)[:100]}
+    except Exception as e:
+        diagnostics['list_developers'] = {"status": "error", "error": str(e)}
+
+    return diagnostics
+
+def diagnose_schema() -> Dict[str, Any]:
+    """
+    Inspect the actual schema of the connected database.
+    """
+    diagnostics = {}
+    
+    try:
+        pg = get_postgres_client()
+        # Query to list columns for 'employees' table
+        query = """
+            SELECT column_name, data_type 
+            FROM information_schema.columns 
+            WHERE table_name = 'employees'
+            ORDER BY ordinal_position;
+        """
+        results = pg.execute_query(query)
+        diagnostics['employees_table_columns'] = [dict(r) for r in results]
+        
+        # Also check current database name to ensure we are in the right DB
+        db_name = pg.execute_query("SELECT current_database();")[0]['current_database']
+        diagnostics['connected_database'] = db_name
+        
+    except Exception as e:
+        diagnostics['error'] = str(e)
+
+    return diagnostics
+
+def diagnose_clickhouse() -> Dict[str, Any]:
+    """
+    Inspect the ClickHouse database: list tables and count rows.
+    """
+    diagnostics = {}
+    try:
+        ch = get_clickhouse_client()
+        
+        # Check tables
+        tables = ch.execute_query("SHOW TABLES")
+        diagnostics['tables'] = [t['name'] for t in tables]
+        
+        # Count rows in key tables
+        counts = {}
+        for t in diagnostics['tables']:
+            if t in ['events', 'dora_daily_metrics']:
+                try:
+                    c = ch.execute_query(f"SELECT count() as c FROM {t}")
+                    counts[t] = c[0]['c']
+                except Exception as e:
+                    counts[t] = f"Error: {str(e)}"
+        
+        diagnostics['row_counts'] = counts
+        
+    except Exception as e:
+        diagnostics['error'] = str(e)
+        
+    return diagnostics
+
+def diagnose_connections() -> Dict[str, Dict[str, Any]]:
+    """
+    Test connections and return detailed diagnostics including error messages.
+    """
+    diagnostics = {}
+    
+    # Postgres
+    try:
+        get_postgres_client().execute_query("SELECT 1")
+        diagnostics['postgres'] = {"status": "ok", "error": None}
+    except Exception as e:
+        diagnostics['postgres'] = {"status": "error", "error": str(e)}
+
+    # Neo4j
+    try:
+        get_neo4j_client().execute_query("RETURN 1")
+        diagnostics['neo4j'] = {"status": "ok", "error": None}
+    except Exception as e:
+        diagnostics['neo4j'] = {"status": "error", "error": str(e)}
+
+    # ClickHouse
+    try:
+        get_clickhouse_client().execute_query("SELECT 1")
+        diagnostics['clickhouse'] = {"status": "ok", "error": None}
+    except Exception as e:
+        diagnostics['clickhouse'] = {"status": "error", "error": str(e)}
+
+    return diagnostics
+
 def close_all_connections():
     """Close all database connections."""
     global _postgres_client, _neo4j_client, _clickhouse_client

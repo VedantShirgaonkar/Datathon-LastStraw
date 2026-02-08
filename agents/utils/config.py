@@ -58,12 +58,22 @@ class FeatherlessConfig:
 
 
 @dataclass
+class OpenAIConfig:
+    """OpenAI LLM configuration."""
+    api_key: str
+    base_url: str
+    model: str  # gpt-4o-mini, gpt-4o, etc.
+
+
+@dataclass
 class Config:
     """Main configuration container for all services."""
     postgres: PostgresConfig
     neo4j: Neo4jConfig
     clickhouse: ClickHouseConfig
     featherless: FeatherlessConfig
+    openai: OpenAIConfig
+    llm_provider: str = "openai"  # "openai" or "featherless"
     debug: bool = False
     log_level: str = "INFO"
 
@@ -145,7 +155,7 @@ def load_config(env_path: Optional[str] = None) -> Config:
         logger.debug(f"ClickHouse config loaded: {clickhouse.host}:{clickhouse.port}")
         
         featherless = FeatherlessConfig(
-            api_key=get_required("FEATHERLESS_API_KEY"),
+            api_key=get_optional("FEATHERLESS_API_KEY", ""),
             base_url=get_optional("FEATHERLESS_BASE_URL", "https://api.featherless.ai/v1"),
             model_primary=get_optional("FEATHERLESS_MODEL_PRIMARY", "Qwen/Qwen2.5-72B-Instruct"),
             model_code=get_optional("FEATHERLESS_MODEL_CODE", "deepseek-ai/DeepSeek-Coder-V2-Instruct"),
@@ -154,16 +164,28 @@ def load_config(env_path: Optional[str] = None) -> Config:
         )
         logger.debug(f"Featherless config loaded: {featherless.base_url}")
         
+        openai = OpenAIConfig(
+            api_key=get_optional("OPENAI_API_KEY", ""),
+            base_url=get_optional("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            model=get_optional("OPENAI_MODEL", "gpt-4o-mini")
+        )
+        logger.debug(f"OpenAI config loaded: model={openai.model}")
+        
+        # Determine LLM provider (default to openai)
+        llm_provider = get_optional("LLM_PROVIDER", "openai")
+        
         config = Config(
             postgres=postgres,
             neo4j=neo4j,
             clickhouse=clickhouse,
             featherless=featherless,
+            openai=openai,
+            llm_provider=llm_provider,
             debug=get_optional("DEBUG", "false").lower() == "true",
             log_level=get_optional("LOG_LEVEL", "INFO")
         )
         
-        logger.info("✓ Configuration loaded successfully")
+        logger.info(f"✓ Configuration loaded successfully (LLM provider: {llm_provider})")
         return config
         
     except ValueError as e:

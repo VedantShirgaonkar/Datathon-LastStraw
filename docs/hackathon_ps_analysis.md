@@ -222,13 +222,13 @@ graph LR
 ├─────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                     │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
-│  │   GitHub    │ │    Jira     │ │   Slack     │ │  Prometheus │ │   Notion    │   │
-│  │    API      │ │    API      │ │    API      │ │    /metrics │ │    API      │   │
+│  │   GitHub    │ │    Jira     │ │        │ │  Prometheus │ │   Notion    │   │
+│  │    API      │ │    API      │ │         │ │    /metrics │ │    API      │   │
 │  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘   │
 │         │               │               │               │               │           │
 │  ┌──────┴───────────────┴───────────────┴───────────────┴───────────────┴──────┐   │
 │  │                        DATA INGESTION LAYER                                  │   │
-│  │  • Webhooks (real-time)    • Polling (scheduled)    • MCP Servers           │   │
+│  │  • Webhooks (real-time)             │   │
 │  └────────────────────────────────────┬─────────────────────────────────────────┘   │
 │                                       │                                             │
 │  ┌────────────────────────────────────┴─────────────────────────────────────────┐   │
@@ -240,9 +240,9 @@ graph LR
 │                                       │                                             │
 │  ┌────────────────────────────────────┴─────────────────────────────────────────┐   │
 │  │                     DATA STORAGE LAYER                                       │   │
-│  │  • Time-series DB (ClickHouse/TimescaleDB) → Metrics                         │   │
-│  │  • Vector DB (Pinecone/Weaviate) → Semantic search for AI                    │   │
-│  │  • Graph DB (Neo4j) → Relationships (dev→team→project)                       │   │
+│  │  • Time-series DB (ClickHouse) → Metrics                         │   │
+│  │  • Vector DB+Postgres (AWS + pgvector) → Semantic search for AI                    │   │
+│  │  • Graph DB (Neo4j Aura) → Relationships (dev→team→project)                       │   │
 │  └────────────────────────────────────┬─────────────────────────────────────────┘   │
 │                                       │                                             │
 │  ┌────────────────────────────────────┴─────────────────────────────────────────┐   │
@@ -255,7 +255,7 @@ graph LR
 │                                       │                                             │
 │  ┌────────────────────────────────────┴─────────────────────────────────────────┐   │
 │  │                     PRESENTATION LAYER                                       │   │
-│  │  • Role-based dashboards (Grafana / Custom React)                            │   │
+│  │  • Role-based dashboards (Custom React)                            │   │
 │  │  • Natural language query interface ("Why is Project X delayed?")            │   │
 │  │  • Alerts & Recommendations engine                                           │   │
 │  │  • API for integrations                                                      │   │

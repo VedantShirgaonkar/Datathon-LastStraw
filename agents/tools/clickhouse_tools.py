@@ -1,238 +1,289 @@
 """
 ClickHouse Tools for Agent System
-Provides tools for querying time-series event data and metrics.
+==================================
+Provides tools for querying time-series event data and DORA metrics
+from ClickHouse Cloud.
+
+Tables:
+    events              – 131 rows of raw engineering events (commits, PR reviews, deploys, etc.)
+    dora_daily_metrics  – 65 rows of daily DORA-style aggregates per project
 """
 
+import json
 from typing import Optional, List, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, date
 from langchain_core.tools import tool
 
-from agents.utils.logger import get_logger, log_tool_call
+from agents.utils.logger import get_logger, log_tool_call, log_db_query
 from agents.utils.db_clients import get_clickhouse_client
 
 logger = get_logger(__name__, "CLICKHOUSE_TOOLS")
 
 
+def _serialise_ch(rows: List[Dict]) -> List[Dict]:
+    """Convert ClickHouse types (UUID, date, datetime) for JSON safety."""
+    import math
+    out = []
+    for row in rows:
+        clean: Dict[str, Any] = {}
+        for k, v in row.items():
+            if isinstance(v, (datetime, date)):
+                clean[k] = v.isoformat()
+            elif hasattr(v, "hex"):
+                clean[k] = str(v)
+            elif isinstance(v, float) and (v != v or math.isinf(v)):  # NaN/Inf
+                clean[k] = None
+            else:
+                clean[k] = v
+        out.append(clean)
+    return out
+
+
 @tool
 def query_events(
     event_type: Optional[str] = None,
-    user_id: Optional[str] = None,
+    actor_id: Optional[str] = None,
     project_id: Optional[str] = None,
-    days_back: int = 7,
-    limit: int = 100
+    source: Optional[str] = None,
+    days_back: int = 30,
+    limit: int = 100,
 ) -> List[Dict[str, Any]]:
     """
-    Query events from the ClickHouse events table.
-    
+    Query raw engineering events from the ClickHouse events table.
+
     Args:
-        event_type: Type of event to filter (e.g., 'commit', 'pr_merged', 'deploy', 'incident')
-        user_id: Filter by user/developer ID
-        project_id: Filter by project ID
-        days_back: Number of days to look back (default 7)
-        limit: Maximum results (default 100)
-    
+        event_type: Filter by type (e.g. 'commit', 'pr_merged', 'pr_reviewed', 'deploy')
+        actor_id:   Filter by actor email / ID
+        project_id: Filter by project slug (e.g. 'proj-api')
+        source:     Filter by source system (e.g. 'github', 'jira')
+        days_back:  Look-back window in days (default 30)
+        limit:      Max rows (default 100)
+
     Returns:
-        List of event records with timestamp, type, and metadata.
+        List of event records with event_id, timestamp, source, event_type,
+        project_id, actor_id, entity_id, entity_type, and metadata.
     """
-    logger.debug(f"query_events called: type={event_type}, user={user_id}, days={days_back}")
-    
+    logger.debug(f"query_events: type={event_type}, actor={actor_id}, project={project_id}, days={days_back}")
+
     try:
         ch = get_clickhouse_client()
-        
-        # Check if events table exists
-        tables_query = "SHOW TABLES"
-        tables = ch.execute_query(tables_query)
-        table_names = [t.get('name', '') for t in tables]
-        
-        if 'events' not in table_names:
-            logger.warning("Events table not found in ClickHouse, returning sample data")
-            # Return synthetic data for demo purposes
-            return _get_sample_events(event_type, days_back, limit)
-        
-        # Build query
-        query = f"""
-            SELECT * FROM events
-            WHERE timestamp >= now() - INTERVAL {days_back} DAY
-        """
-        
+
+        query = f"SELECT * FROM events WHERE timestamp >= now() - INTERVAL {int(days_back)} DAY"
+
         if event_type:
             query += f" AND event_type = '{event_type}'"
-        if user_id:
-            query += f" AND user_id = '{user_id}'"
-        if project_id:
+        if actor_id:
+            query += f" AND actor_id = '{actor_id}'"
+        if project_id and project_id.lower() != "string":
             query += f" AND project_id = '{project_id}'"
-        
-        query += f" ORDER BY timestamp DESC LIMIT {limit}"
-        
+        if source:
+            query += f" AND source = '{source}'"
+
+        query += f" ORDER BY timestamp DESC LIMIT {int(limit)}"
+
+        log_db_query(logger, "clickhouse", query, {})
         results = ch.execute_query(query)
-        log_tool_call(logger, "query_events", {"type": event_type, "days": days_back}, f"{len(results)} events")
-        return results
-        
+
+        events = _serialise_ch(results)
+        # Parse metadata JSON strings
+        for evt in events:
+            if isinstance(evt.get("metadata"), str):
+                try:
+                    evt["metadata"] = json.loads(evt["metadata"])
+                except (json.JSONDecodeError, TypeError):
+                    pass
+
+        log_tool_call(logger, "query_events", {"type": event_type, "days": days_back}, f"{len(events)} events")
+        return events
+
     except Exception as e:
-        logger.warning(f"ClickHouse query failed, returning sample data: {e}")
-        return _get_sample_events(event_type, days_back, limit)
-
-
-def _get_sample_events(event_type: Optional[str], days_back: int, limit: int) -> List[Dict[str, Any]]:
-    """Generate sample events for demo when real data isn't available."""
-    sample_events = [
-        {"event_type": "commit", "user_name": "Alex Kumar", "project_name": "API Gateway v2", "count": 15, "period": "last 7 days"},
-        {"event_type": "commit", "user_name": "Priya Sharma", "project_name": "API Gateway v2", "count": 23, "period": "last 7 days"},
-        {"event_type": "commit", "user_name": "Rahul Verma", "project_name": "Customer Dashboard", "count": 18, "period": "last 7 days"},
-        {"event_type": "pr_merged", "user_name": "Alex Kumar", "project_name": "API Gateway v2", "count": 8, "period": "last 7 days"},
-        {"event_type": "pr_merged", "user_name": "Priya Sharma", "project_name": "Customer Dashboard", "count": 12, "period": "last 7 days"},
-        {"event_type": "deploy", "project_name": "API Gateway v2", "environment": "staging", "count": 5, "period": "last 7 days", "status": "success"},
-        {"event_type": "deploy", "project_name": "Customer Dashboard", "environment": "production", "count": 3, "period": "last 7 days", "status": "success"},
-        {"event_type": "incident", "project_name": "API Gateway v2", "severity": "medium", "count": 2, "period": "last 7 days", "mttr_hours": 1.5},
-    ]
-    
-    if event_type:
-        sample_events = [e for e in sample_events if e.get("event_type") == event_type]
-    
-    return sample_events[:limit]
+        log_tool_call(logger, "query_events", {"type": event_type}, error=e)
+        return [{"error": str(e)}]
 
 
 @tool
-def get_deployment_metrics(project_name: Optional[str] = None, days_back: int = 30) -> Dict[str, Any]:
+def get_deployment_metrics(
+    project_id: Optional[str] = None,
+    days_back: int = 30,
+) -> Dict[str, Any]:
     """
-    Get DORA deployment metrics for a project or all projects.
-    
+    Get DORA deployment metrics from the dora_daily_metrics table.
+
+    Computes:
+      - deployment_frequency (per week)
+      - avg_lead_time_hours
+      - change_failure_rate (failed / total deployments)
+      - total deployments, PRs merged, commits, story points
+
     Args:
-        project_name: Project name to filter (optional)
-        days_back: Number of days to analyze (default 30)
-    
+        project_id: Project slug to filter (e.g. 'proj-api'). All projects if omitted.
+        days_back:  Analysis window in days (default 30)
+
     Returns:
-        Dictionary with deployment_frequency, lead_time_hours, change_failure_rate, mttr_hours.
+        Dict with DORA metrics and a per-project breakdown.
     """
-    logger.debug(f"get_deployment_metrics called: project={project_name}, days={days_back}")
-    
+    logger.debug(f"get_deployment_metrics: project={project_id}, days={days_back}")
+
     try:
-        # For now, return synthetic DORA metrics since we may not have real data
-        # In production, this would query ClickHouse event data
-        
-        if project_name:
-            if "api" in project_name.lower() or "gateway" in project_name.lower():
-                metrics = {
-                    "project": project_name,
-                    "period_days": days_back,
-                    "deployment_frequency": "4 per week",
-                    "deployment_count": 16,
-                    "lead_time_hours": 24.5,
-                    "change_failure_rate_percent": 5.2,
-                    "mttr_hours": 1.8,
-                    "dora_rating": "Elite",
-                    "trend": "improving"
-                }
-            else:
-                metrics = {
-                    "project": project_name,
-                    "period_days": days_back,
-                    "deployment_frequency": "2 per week",
-                    "deployment_count": 8,
-                    "lead_time_hours": 48.0,
-                    "change_failure_rate_percent": 8.5,
-                    "mttr_hours": 3.2,
-                    "dora_rating": "High",
-                    "trend": "stable"
-                }
-        else:
-            # Aggregate across all projects
-            metrics = {
-                "project": "All Projects",
-                "period_days": days_back,
-                "deployment_frequency": "3 per week",
-                "total_deployments": 24,
-                "avg_lead_time_hours": 36.2,
-                "avg_change_failure_rate_percent": 6.8,
-                "avg_mttr_hours": 2.5,
-                "dora_rating": "High",
-                "top_performers": ["API Gateway v2", "Auth Service"],
-                "needs_attention": ["Legacy CRM Integration"]
+        ch = get_clickhouse_client()
+
+        where = f"WHERE date >= today() - {int(days_back)}"
+        if project_id and project_id.lower() != "string":
+            where += f" AND project_id = '{project_id}'"
+
+        # Aggregate metrics
+        agg_query = f"""
+            SELECT
+                project_id,
+                sum(deployments)                AS total_deployments,
+                sum(failed_deployments)         AS total_failed,
+                avg(avg_lead_time_hours)        AS avg_lead_time_hours,
+                sum(prs_merged)                 AS total_prs_merged,
+                sum(commits)                    AS total_commits,
+                sum(story_points_completed)     AS total_story_points,
+                count()                         AS days_tracked
+            FROM dora_daily_metrics
+            {where}
+            GROUP BY project_id
+            ORDER BY total_deployments DESC
+        """
+
+        log_db_query(logger, "clickhouse", "DORA metrics aggregate", {"project": project_id, "days": days_back})
+        rows = ch.execute_query(agg_query)
+        rows = _serialise_ch(rows)
+
+        # Build per-project breakdown
+        projects: List[Dict] = []
+        total_deps = 0
+        total_failed = 0
+        total_prs = 0
+        total_commits = 0
+        total_sp = 0
+        lead_times: List[float] = []
+
+        for r in rows:
+            deps = int(r.get("total_deployments", 0))
+            failed = int(r.get("total_failed", 0))
+            days_tracked = int(r.get("days_tracked", 1))
+            lt_raw = r.get("avg_lead_time_hours")
+
+            # ClickHouse may return NaN as None (after _serialise_ch) or as str
+            import math
+            try:
+                lt = float(lt_raw) if lt_raw is not None else None
+                if lt is not None and (math.isnan(lt) or math.isinf(lt)):
+                    lt = None
+            except (ValueError, TypeError):
+                lt = None
+
+            cfr = (failed / deps * 100) if deps > 0 else 0.0
+            freq_per_week = deps / max(days_tracked / 7, 1)
+
+            proj_metrics = {
+                "project_id": r["project_id"],
+                "deployments": deps,
+                "failed_deployments": failed,
+                "change_failure_rate_pct": round(cfr, 1),
+                "deployment_freq_per_week": round(freq_per_week, 1),
+                "avg_lead_time_hours": round(lt, 1) if lt is not None else None,
+                "prs_merged": int(r.get("total_prs_merged", 0)),
+                "commits": int(r.get("total_commits", 0)),
+                "story_points": int(r.get("total_story_points", 0)),
             }
-        
-        log_tool_call(logger, "get_deployment_metrics", {"project": project_name, "days": days_back}, metrics)
-        return metrics
-        
+            projects.append(proj_metrics)
+
+            total_deps += deps
+            total_failed += failed
+            total_prs += int(r.get("total_prs_merged", 0))
+            total_commits += int(r.get("total_commits", 0))
+            total_sp += int(r.get("total_story_points", 0))
+            if lt is not None:
+                lead_times.append(lt)
+
+        # Overall summary
+        overall_cfr = (total_failed / total_deps * 100) if total_deps > 0 else 0.0
+        valid_lead_times = [lt for lt in lead_times if lt is not None]
+        overall_lt = sum(valid_lead_times) / len(valid_lead_times) if valid_lead_times else None
+
+        result = {
+            "period_days": days_back,
+            "total_deployments": total_deps,
+            "total_failed_deployments": total_failed,
+            "change_failure_rate_pct": round(overall_cfr, 1),
+            "avg_lead_time_hours": round(overall_lt, 1) if overall_lt else None,
+            "total_prs_merged": total_prs,
+            "total_commits": total_commits,
+            "total_story_points": total_sp,
+            "projects": projects,
+        }
+
+        log_tool_call(logger, "get_deployment_metrics", {"project": project_id, "days": days_back}, result)
+        return result
+
     except Exception as e:
-        log_tool_call(logger, "get_deployment_metrics", {"project": project_name}, error=e)
+        log_tool_call(logger, "get_deployment_metrics", {"project": project_id}, error=e)
         return {"error": str(e)}
 
 
 @tool
-def get_developer_activity(developer_name: Optional[str] = None, days_back: int = 7) -> List[Dict[str, Any]]:
+def get_developer_activity(
+    actor_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+    days_back: int = 7,
+) -> List[Dict[str, Any]]:
     """
-    Get developer activity summary (commits, PRs, reviews) for the specified period.
-    
+    Get developer activity summary from the events table.
+
+    Aggregates commits, PRs, reviews, and deploys per actor for the given period.
+
     Args:
-        developer_name: Developer name to filter (optional, returns all if not specified)
-        days_back: Number of days to analyze (default 7)
-    
+        actor_id:   Filter by actor email / ID (optional, all actors if omitted)
+        project_id: Filter by project slug (optional)
+        days_back:  Look-back window in days (default 7)
+
     Returns:
-        List of developer activity summaries with commit_count, pr_count, review_count.
+        List of activity summaries per developer with event breakdowns.
     """
-    logger.debug(f"get_developer_activity called: name={developer_name}, days={days_back}")
-    
+    logger.debug(f"get_developer_activity: actor={actor_id}, project={project_id}, days={days_back}")
+
     try:
-        # Synthetic activity data
-        activities = [
-            {
-                "developer": "Priya Sharma",
-                "team": "Platform Engineering",
-                "period_days": days_back,
-                "commit_count": 23,
-                "pr_opened": 8,
-                "pr_merged": 6,
-                "reviews_given": 15,
-                "avg_review_time_hours": 2.5,
-                "top_projects": ["API Gateway v2", "Auth Service"],
-                "productivity_score": 92
-            },
-            {
-                "developer": "Alex Kumar",
-                "team": "Platform Engineering",
-                "period_days": days_back,
-                "commit_count": 15,
-                "pr_opened": 5,
-                "pr_merged": 4,
-                "reviews_given": 8,
-                "avg_review_time_hours": 4.2,
-                "top_projects": ["API Gateway v2"],
-                "productivity_score": 78
-            },
-            {
-                "developer": "Rahul Verma",
-                "team": "Platform Engineering",
-                "period_days": days_back,
-                "commit_count": 18,
-                "pr_opened": 6,
-                "pr_merged": 5,
-                "reviews_given": 12,
-                "avg_review_time_hours": 3.0,
-                "top_projects": ["Customer Dashboard", "Mobile App"],
-                "productivity_score": 85
-            },
-            {
-                "developer": "Sarah Chen",
-                "team": "Frontend Team",
-                "period_days": days_back,
-                "commit_count": 12,
-                "pr_opened": 4,
-                "pr_merged": 3,
-                "reviews_given": 6,
-                "avg_review_time_hours": 5.5,
-                "top_projects": ["Customer Dashboard"],
-                "productivity_score": 72
-            }
-        ]
-        
-        if developer_name:
-            activities = [a for a in activities if developer_name.lower() in a["developer"].lower()]
-        
-        log_tool_call(logger, "get_developer_activity", {"name": developer_name, "days": days_back}, f"{len(activities)} developers")
+        ch = get_clickhouse_client()
+
+        where = f"WHERE timestamp >= now() - INTERVAL {int(days_back)} DAY"
+        if actor_id:
+            where += f" AND actor_id = '{actor_id}'"
+        if project_id and project_id.lower() != "string":
+            where += f" AND project_id = '{project_id}'"
+
+        query = f"""
+            SELECT
+                actor_id,
+                countIf(event_type = 'commit')      AS commits,
+                countIf(event_type = 'pr_merged')    AS prs_merged,
+                countIf(event_type = 'pr_reviewed')  AS prs_reviewed,
+                countIf(event_type = 'deploy')       AS deploys,
+                count()                              AS total_events,
+                groupUniqArray(project_id)           AS active_projects,
+                groupUniqArray(source)               AS sources
+            FROM events
+            {where}
+            GROUP BY actor_id
+            ORDER BY total_events DESC
+        """
+
+        log_db_query(logger, "clickhouse", "developer activity aggregate", {"actor": actor_id, "days": days_back})
+        rows = ch.execute_query(query)
+        activities = _serialise_ch(rows)
+
+        log_tool_call(
+            logger, "get_developer_activity",
+            {"actor": actor_id, "days": days_back},
+            f"{len(activities)} developers",
+        )
         return activities
-        
+
     except Exception as e:
-        log_tool_call(logger, "get_developer_activity", {"name": developer_name}, error=e)
+        log_tool_call(logger, "get_developer_activity", {"actor": actor_id}, error=e)
         return [{"error": str(e)}]
 
 

@@ -31,3 +31,6 @@ logs/
 dist/
 build/
 *.egg-info/
+logs/
+__pycache__/
+*.pyc
